@@ -30,13 +30,10 @@ void setup() {
 
   //LED STATE LOW
   pinMode(LED1, OUTPUT);
-  digitalWrite(LED1,LOW);
   pinMode(LED2, OUTPUT);
-  digitalWrite(LED2,LOW);
   pinMode(LED3, OUTPUT);
-  digitalWrite(LED3,LOW);
   pinMode(LED4, OUTPUT);
-  digitalWrite(LED4,LOW);
+  ShowNum();
 }
 
 
@@ -69,6 +66,7 @@ void loop() {
   }
   return;
   go:
+  
   //step
   digitalWrite(OUT1, HIGH);
   while(seconds > 0){
@@ -94,10 +92,6 @@ void ShowNum(){
     digitalWrite(LED[3], HIGH);
     return;
   }
-  for(int i = 0; i < 4; i++){
-    if((seconds >> i & 0b0001) == 0b0001)
-      digitalWrite(LED[i], HIGH);
-    else
-      digitalWrite(LED[i], LOW);
-  }
+  for(int i = 0; i < 4; i++)
+    digitalWrite(LED[i], (seconds >> i & 0b0001));
 }
