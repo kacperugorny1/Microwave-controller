@@ -38,9 +38,25 @@ void setup() {
 
 
 void loop() {
+  //button start
   if(digitalRead(START_READ) == HIGH && seconds != 0){
-    goto go;
+      //step
+    digitalWrite(OUT1, HIGH);
+    while(seconds > 0){
+      delay(1000);
+      seconds--;
+      Serial.println(seconds);
+      ShowNum();
+    }
+    digitalWrite(OUT1, LOW);
+
+    // impulse
+    digitalWrite(OUT2, HIGH);
+    delay(1000);
+    digitalWrite(OUT2,LOW);
   }
+
+
   history_down = history_down << 1;
   history_up = history_up << 1;
   if(digitalRead(INC_DOWN) == HIGH){
@@ -64,23 +80,8 @@ void loop() {
     Serial.println(seconds);
     ShowNum();
   }
-  return;
-  go:
   
-  //step
-  digitalWrite(OUT1, HIGH);
-  while(seconds > 0){
-    delay(1000);
-    seconds--;
-    Serial.println(seconds);
-    ShowNum();
-  }
-  digitalWrite(OUT1, LOW);
-
-  // impulse
-  digitalWrite(OUT2, HIGH);
-  delay(1000);
-  digitalWrite(OUT2,LOW);
+  
 }
 
 void ShowNum(){
@@ -94,4 +95,4 @@ void ShowNum(){
   }
   for(int i = 0; i < 4; i++)
     digitalWrite(LED[i], (seconds >> i & 0b0001));
-}
+} 
