@@ -31,10 +31,13 @@ int seconds = 0;
 uint8_t history_up = 0;
 uint8_t history_down = 0;
 
-void ShowNum();
+void ShowNum(void * parameter);
+void ReadingInput(void * parameter);
 
 void setup() {
   Serial.begin(115200);
+  TaskHandle_t Task_Display;
+  TaskHandle_t Task_Input;
   pinMode(INC_DOWN ,INPUT_PULLDOWN);
   pinMode(INC_UP ,INPUT_PULLDOWN);
   pinMode(START_READ ,INPUT_PULLDOWN);
@@ -57,7 +60,22 @@ void setup() {
   }
   pinMode(DOT, OUTPUT_OPEN_DRAIN);
   digitalWrite(DOT, HIGH);
-  
+  xTaskCreatePinnedToCore(
+      ShowNum, /* Function to implement the task */
+      "Task_Display", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      1,  /* Priority of the task */
+      &Task_Display,  /* Task handle. */
+      0); /* Core where the task should run */
+  xTaskCreatePinnedToCore(
+      ReadingInput, /* Function to implement the task */
+      "Task_Input", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      1,  /* Priority of the task */
+      &Task_Display,  /* Task handle. */
+      1); /* Core where the task should run */
   
 }
 
@@ -73,86 +91,89 @@ void loop() {
         seconds--;
         now = millis();
       }
-      ShowNum();
     }
     digitalWrite(OUT1, LOW);
-
     // impulse
     digitalWrite(OUT2, HIGH);
     delay(1000);
     digitalWrite(OUT2,LOW);
+
   }
 
 
-  history_down = history_down << 1;
-  history_up = history_up << 1;
-  if(digitalRead(INC_DOWN) == HIGH){
-    history_down = history_down + 1;
-  }
+}
+void ReadingInput(void * parameter){
+  while(true){
+    history_down = history_down << 1;
+    history_up = history_up << 1;
+    if(digitalRead(INC_DOWN) == HIGH){
+      history_down = history_down + 1;
+    }
 
-  if(digitalRead(INC_UP) == HIGH){
-    history_up = history_up + 1;
-  }
+    if(digitalRead(INC_UP) == HIGH){
+      history_up = history_up + 1;
+    }
 
 
-  if(history_up == 0b11110000){
-    if(seconds != 599)
-      seconds++;
+    if(history_up == 0b11110000){
+      if(seconds != 599)
+        seconds++;
+    }
+    if(history_down == 0b11110000){
+      if(seconds != 0)
+        seconds--;
+    }
+
   }
-  if(history_down == 0b11110000){
-    if(seconds != 0)
-      seconds--;
-  }
-  ShowNum();
-  
-  
 }
 
-void ShowNum(){
-  int mins = seconds / 60;
-  int onlyseconds = seconds % 60;
-  if(mins != 0){
-    digitalWrite(LED_DISPLAY[2], HIGH);
-    for(int seg : nums[mins])
+void ShowNum(void * parameter){
+  while(true){
+
+    int mins = seconds / 60;
+    if(mins != 0){
+      digitalWrite(LED_DISPLAY[2], HIGH);
+      for(int seg : nums[mins])
+      {
+        digitalWrite(seg, LOW);
+      }
+      digitalWrite(DOT, LOW);
+      delay(1);
+      digitalWrite(DOT, HIGH);
+      for(int seg : SEG)
+      {
+        digitalWrite(seg, HIGH);
+      }
+      digitalWrite(LED_DISPLAY[2], LOW);
+    }
+
+
+    digitalWrite(LED_DISPLAY[1], HIGH);
+    if(mins > 0 || seconds >= 10)
+    for(int seg : nums[(seconds % 60)/10])
     {
       digitalWrite(seg, LOW);
     }
-    digitalWrite(DOT, LOW);
     delay(1);
-    digitalWrite(DOT, HIGH);
     for(int seg : SEG)
     {
       digitalWrite(seg, HIGH);
     }
-    digitalWrite(LED_DISPLAY[2], LOW);
-  }
+    digitalWrite(LED_DISPLAY[1], LOW);
+    
 
-
-  digitalWrite(LED_DISPLAY[1], HIGH);
-  if(mins > 0 || seconds >= 10)
-  for(int seg : nums[onlyseconds/10])
-  {
-    digitalWrite(seg, LOW);
+    if(seconds > 0 || mins > 0)
+    digitalWrite(LED_DISPLAY[0], HIGH);
+    for(int seg : nums[(seconds % 60)%10])
+    {
+      digitalWrite(seg, LOW);
+    }
+    delay(1);
+    for(int seg : SEG)
+    {
+      digitalWrite(seg, HIGH);
+    }
+    
+    digitalWrite(LED_DISPLAY[0], LOW);
   }
-  delay(1);
-  for(int seg : SEG)
-  {
-    digitalWrite(seg, HIGH);
-  }
-  digitalWrite(LED_DISPLAY[1], LOW);
-  
-
-  if(seconds > 0 || mins > 0)
-  digitalWrite(LED_DISPLAY[0], HIGH);
-  for(int seg : nums[onlyseconds%10])
-  {
-    digitalWrite(seg, LOW);
-  }
-  delay(1);
-  for(int seg : SEG)
-  {
-    digitalWrite(seg, HIGH);
-  }
-  
-  digitalWrite(LED_DISPLAY[0], LOW);
   } 
