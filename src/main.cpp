@@ -129,6 +129,7 @@ void ShowNum(){
 
 
   digitalWrite(LED_DISPLAY[1], HIGH);
+  if(mins > 0 || seconds >= 10)
   for(int seg : nums[onlyseconds/10])
   {
     digitalWrite(seg, LOW);
@@ -141,7 +142,7 @@ void ShowNum(){
   digitalWrite(LED_DISPLAY[1], LOW);
   
 
-
+  if(seconds > 0 || mins > 0)
   digitalWrite(LED_DISPLAY[0], HIGH);
   for(int seg : nums[onlyseconds%10])
   {
@@ -154,9 +155,4 @@ void ShowNum(){
   }
   
   digitalWrite(LED_DISPLAY[0], LOW);
-
-
-
-
-
-} 
+  } 
