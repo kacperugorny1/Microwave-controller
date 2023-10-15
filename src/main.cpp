@@ -10,6 +10,9 @@
 #define LED3 33
 #define LED4 27
 
+#define A 15
+#define B 0
+
 #define SEGA 26
 #define SEGB 14 // dont work
 #define SEGC 17 // dont work
@@ -30,9 +33,13 @@ int nums[10][7] = {{SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGF}, {SEGB, SEGC, SEGB
 int seconds = 0;
 uint8_t history_up = 0;
 uint8_t history_down = 0;
+bool didBChange = true;
+int previousA;
+int previousB;
 
 void ShowNum(void * parameter);
 void ReadingInput(void * parameter);
+void Encoder_Inc();
 
 void setup() {
   Serial.begin(115200);
@@ -41,6 +48,13 @@ void setup() {
   pinMode(INC_DOWN ,INPUT_PULLDOWN);
   pinMode(INC_UP ,INPUT_PULLDOWN);
   pinMode(START_READ ,INPUT_PULLDOWN);
+
+  pinMode(A, INPUT_PULLUP);
+  previousA = digitalRead(A);
+  pinMode(B, INPUT_PULLUP);
+  previousB = digitalRead(B);
+
+  attachInterrupt(A, Encoder_Inc, FALLING);
 
   //OUTPUTS STATE LOW
   pinMode(OUT1, OUTPUT);
@@ -54,12 +68,16 @@ void setup() {
   pinMode(LED3, OUTPUT);
   pinMode(LED4, OUTPUT);
 
+
   for(int seg : SEG){
     pinMode(seg, OUTPUT_OPEN_DRAIN);
     digitalWrite(seg, HIGH);
   }
   pinMode(DOT, OUTPUT_OPEN_DRAIN);
   digitalWrite(DOT, HIGH);
+
+  
+
   xTaskCreatePinnedToCore(
       ShowNum, /* Function to implement the task */
       "Task_Display", /* Name of the task */
@@ -79,7 +97,6 @@ void setup() {
   
 }
 
-
 void loop() {
   //button start
   if(digitalRead(START_READ) == HIGH && seconds != 0){
@@ -97,12 +114,10 @@ void loop() {
     digitalWrite(OUT2, HIGH);
     delay(1000);
     digitalWrite(OUT2,LOW);
-
   }
-
-
 }
-void ReadingInput(void * parameter){
+
+void ReadingInput(void * parameter){ //task
   while(true){
     history_down = history_down << 1;
     history_up = history_up << 1;
@@ -113,21 +128,40 @@ void ReadingInput(void * parameter){
     if(digitalRead(INC_UP) == HIGH){
       history_up = history_up + 1;
     }
-
-
     if(history_up == 0b11110000){
-      if(seconds != 599)
-        seconds++;
+      if(seconds < 590)
+        seconds+=10;
     }
     if(history_down == 0b11110000){
-      if(seconds != 0)
-        seconds--;
+      if(seconds >= 10)
+        seconds-=10;
+      else
+        seconds = 0;
     }
-
+    
+    if(previousB != digitalRead(B))
+      didBChange = true;
+    previousB = digitalRead(B);
+    previousA = digitalRead(A);
   }
 }
 
-void ShowNum(void * parameter){
+void Encoder_Inc(){ //przerwanie
+  if(didBChange && previousA == HIGH && digitalRead(A) == LOW){
+    if(digitalRead(B) == LOW){
+      if(seconds != 599)
+        seconds++;
+    }
+    else{
+      if(seconds != 0)
+        seconds--;
+    } 
+      
+    didBChange = false;
+  }
+}
+
+void ShowNum(void * parameter){ //task
   while(true){
 
     int mins = seconds / 60;
@@ -176,4 +210,4 @@ void ShowNum(void * parameter){
     
     digitalWrite(LED_DISPLAY[0], LOW);
   }
-  } 
+} 
