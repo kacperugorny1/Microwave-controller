@@ -1,11 +1,12 @@
 #include <Arduino.h>
+#include <IRremote.h>
 #define INC_DOWN 22 // INCREMENT DOWN
 #define INC_UP 23 // INCREMENT UP
 #define START_READ 1 // START BUTTON
 #define OUT1 3 // step
 #define OUT2 21 // impulse
 // malfunction ports 34 35 36 39
-#define LED1 16 // dont work
+#define LED1 16 
 #define LED2 32
 #define LED3 33
 #define LED4 27
@@ -14,13 +15,15 @@
 #define B 0
 
 #define SEGA 26
-#define SEGB 14 // dont work
-#define SEGC 17 // dont work
+#define SEGB 14 
+#define SEGC 17
 #define SEGD 18 
 #define SEGE 19
 #define SEGF 25
-#define SEGG 5 // dont work
+#define SEGG 5
 #define DOT 4
+
+#define IRRead 36
 
 int LED_DISPLAY[4] = {LED2, LED3, LED4, LED1};
 int SEG[7] = {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG};
