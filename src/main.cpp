@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <IRremote.h>
+#include <WiFi.h>
+#include <time.h>
 #define INC_DOWN 22 // INCREMENT DOWN
 #define INC_UP 23 // INCREMENT UP
 #define START_READ 1 // START BUTTON
@@ -27,14 +29,20 @@
 #define DOT 4
 
 #define IRRead 36
+const char* ssid = "internet_dom1";
+const char* password = "1qaz2wsx";
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 3600;
+const int daylightOffset_sec = 3600;
 
-int LED_DISPLAY[4] = {LED2, LED3, LED4, LED1};
+int LED_DISPLAY[4] = {LED1 ,LED2, LED3, LED4};
 int SEG[7] = {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG};
-int nums[10][7] = {{SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGF}, {SEGB, SEGC, SEGB, SEGC, SEGB, SEGC, SEGB},
+int nums[11][7] = {{SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGF}, {SEGB, SEGC, SEGB, SEGC, SEGB, SEGC, SEGB},
                    {SEGA, SEGB, SEGG, SEGE, SEGD, SEGD, SEGD}, {SEGA,SEGB,SEGG,SEGC,SEGD,SEGC,SEGD},
                    {SEGF, SEGB, SEGG, SEGC,SEGB, SEGG, SEGC}, {SEGA,SEGF,SEGG,SEGC,SEGD,SEGC,SEGD},
                    {SEGA,SEGF,SEGG,SEGC,SEGD,SEGE,SEGE}, {SEGA,SEGB,SEGC,SEGA,SEGB,SEGC,SEGA},
-                   {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG}, {SEGA,SEGB,SEGG,SEGF,SEGC,SEGD,SEGD}
+                   {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG}, {SEGA,SEGB,SEGG,SEGF,SEGC,SEGD,SEGD},
+                   {SEGG,SEGG,SEGG,SEGG,SEGG,SEGG,SEGG}
                     };
 int seconds = 0;
 uint8_t history_up = 0;
@@ -44,7 +52,8 @@ int previousA;
 int previousB;
 bool start = false;
 
-void ShowNum(void * parameter);
+void ShowNums(void * parameter);
+void ShowNum(int,int,bool);
 void ReadingInput(void * parameter);
 void Encoder_Inc();
 
@@ -61,7 +70,6 @@ void setup() {
   pinMode(B, INPUT_PULLUP);
   previousB = digitalRead(B);
 
-  attachInterrupt(A, Encoder_Inc, FALLING);
 
   //OUTPUTS STATE LOW
   pinMode(OUT1, OUTPUT);
@@ -84,10 +92,18 @@ void setup() {
   digitalWrite(DOT, HIGH);
 
   IrReceiver.begin(IRRead);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   
 
+  attachInterrupt(A, Encoder_Inc, FALLING);
   xTaskCreatePinnedToCore(
-      ShowNum, /* Function to implement the task */
+      ShowNums, /* Function to implement the task */
       "Task_Display", /* Name of the task */
       10000,  /* Stack size in words */
       NULL,  /* Task input parameter */
@@ -198,53 +214,40 @@ void Encoder_Inc(){ //przerwanie
   }
 }
 
-void ShowNum(void * parameter){ //task
-  while(true){
-
-    int mins = seconds / 60;
-    if(mins != 0){
-      digitalWrite(LED_DISPLAY[2], HIGH);
-      for(int seg : nums[mins])
+void ShowNum(int display_port, int num, bool dot){
+    digitalWrite(display_port, HIGH);
+      for(int seg : nums[num])
       {
         digitalWrite(seg, LOW);
       }
-      digitalWrite(DOT, LOW);
+      digitalWrite(DOT, dot?LOW:HIGH);
       delay(1);
       digitalWrite(DOT, HIGH);
       for(int seg : SEG)
       {
         digitalWrite(seg, HIGH);
       }
-      digitalWrite(LED_DISPLAY[2], LOW);
+      digitalWrite(display_port, LOW);
+}
+
+void ShowNums(void * parameter){ //task
+  while(true){
+    if(seconds == 0){
+      struct tm timeinfo;
+      if(!getLocalTime(&timeinfo))
+        break;
+      ShowNum(LED_DISPLAY[0], timeinfo.tm_min%10, false);
+      ShowNum(LED_DISPLAY[1], timeinfo.tm_min/10, false);
+      ShowNum(LED_DISPLAY[2], timeinfo.tm_hour%10, true);
+      ShowNum(LED_DISPLAY[3], timeinfo.tm_hour/10, false);
     }
 
-
-    digitalWrite(LED_DISPLAY[1], HIGH);
+    int mins = seconds / 60;
+    if(mins != 0)
+      ShowNum(LED_DISPLAY[3], mins, true);  
     if(mins > 0 || seconds >= 10)
-    for(int seg : nums[(seconds % 60)/10])
-    {
-      digitalWrite(seg, LOW);
-    }
-    delay(1);
-    for(int seg : SEG)
-    {
-      digitalWrite(seg, HIGH);
-    }
-    digitalWrite(LED_DISPLAY[1], LOW);
-    
-
+      ShowNum(LED_DISPLAY[2], (seconds % 60)/10, false);
     if(seconds > 0 || mins > 0)
-    digitalWrite(LED_DISPLAY[0], HIGH);
-    for(int seg : nums[(seconds % 60)%10])
-    {
-      digitalWrite(seg, LOW);
-    }
-    delay(1);
-    for(int seg : SEG)
-    {
-      digitalWrite(seg, HIGH);
-    }
-    
-    digitalWrite(LED_DISPLAY[0], LOW);
+      ShowNum(LED_DISPLAY[1], (seconds % 60)%10, false);
   }
 } 
