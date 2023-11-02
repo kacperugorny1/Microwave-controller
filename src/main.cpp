@@ -31,9 +31,11 @@
 #define IRRead 39
 const char* ssid = "internet_dom1";
 const char* password = "1qaz2wsx";
-const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 3600;
+const char* ntpServer = "tempus1.gum.gov.pl";
+const char* ntpServer2 = "tempus2.gum.gov.pl";
+const long gmtOffset_sec = 0;
 const int daylightOffset_sec = 0;
+const String timezone = 	"CET-1CEST,M3.5.0,M10.5.0/3";
 
 int LED_DISPLAY[4] = {LED1 ,LED2, LED3, LED4};
 int SEG[7] = {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG};
@@ -56,6 +58,7 @@ void ShowNums(void * parameter);
 void ShowNum(int,int,bool);
 void ReadingInput(void * parameter);
 void Encoder_Inc();
+void setTimezone(String timezone);
 
 void setup() {
   Serial.begin(115200);  
@@ -99,9 +102,10 @@ void setup() {
       break;
     delay(500);
   }
-  if(WiFi.status() == WL_CONNECTED)
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  
+  if(WiFi.status() == WL_CONNECTED){
+    configTime(0, 0, ntpServer, ntpServer2);
+    setTimezone(timezone);
+  }
 
   IrReceiver.begin(IRRead);
   attachInterrupt(A, Encoder_Inc, FALLING);
@@ -203,6 +207,12 @@ void ReadingInput(void * parameter){ //task
     previousB = digitalRead(B);
     previousA = digitalRead(A);
   }
+}
+
+void setTimezone(String timezone){
+  Serial.printf("  Setting Timezone to %s\n",timezone.c_str());
+  setenv("TZ",timezone.c_str(),1);  //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
+  tzset();
 }
 
 void Encoder_Inc(){ //przerwanie
