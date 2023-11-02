@@ -28,12 +28,12 @@
 #define SEGG 5
 #define DOT 4
 
-#define IRRead 36
+#define IRRead 39
 const char* ssid = "internet_dom1";
 const char* password = "1qaz2wsx";
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600;
-const int daylightOffset_sec = 3600;
+const int daylightOffset_sec = 0;
 
 int LED_DISPLAY[4] = {LED1 ,LED2, LED3, LED4};
 int SEG[7] = {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG};
@@ -88,26 +88,29 @@ void setup() {
     pinMode(seg, OUTPUT_OPEN_DRAIN);
     digitalWrite(seg, HIGH);
   }
+  
   pinMode(DOT, OUTPUT_OPEN_DRAIN);
   digitalWrite(DOT, HIGH);
-
-  IrReceiver.begin(IRRead);
-
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+  auto time = millis();
   while (WiFi.status() != WL_CONNECTED) {
+    if(millis() - time == 1000*10)
+      break;
     delay(500);
   }
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  if(WiFi.status() == WL_CONNECTED)
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   
 
+  IrReceiver.begin(IRRead);
   attachInterrupt(A, Encoder_Inc, FALLING);
   xTaskCreatePinnedToCore(
       ShowNums, /* Function to implement the task */
       "Task_Display", /* Name of the task */
       10000,  /* Stack size in words */
       NULL,  /* Task input parameter */
-      1,  /* Priority of the task */
+      0,  /* Priority of the task */
       &Task_Display,  /* Task handle. */
       0); /* Core where the task should run */
   xTaskCreatePinnedToCore(
@@ -118,6 +121,9 @@ void setup() {
       1,  /* Priority of the task */
       &Task_Input,  /* Task handle. */
       1); /* Core where the task should run */
+
+
+
   
 }
 
