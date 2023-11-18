@@ -2,6 +2,8 @@
 #include <IRremote.h>
 #include <WiFi.h>
 #include <time.h>
+#include <song.h>
+
 #define INC_DOWN 22 // INCREMENT DOWN
 #define INC_UP 23 // INCREMENT UP
 #define START_READ 1 // START BUTTON
@@ -10,27 +12,22 @@
 
 // malfunction ports 34 35 36 39 - it input only
 // pick Seg display
-#define LED4 32
+#define LED1 16 
+#define LED2 32
 #define LED3 33
-#define LED2 25
-#define LED1 16
+#define LED4 27
 
 //encoder paths
 #define A 15 
 #define B 0 
 
-#define BCD0 19
-#define BCD1 17
-#define BCD2 5
-#define BCD3 18
-
-// #define SEGA 26
-// #define SEGB 14 
-// #define SEGC 17
-// #define SEGD 18 
-// #define SEGE 19
-// #define SEGF 25
-// #define SEGG 5
+#define SEGA 26
+#define SEGB 14 
+#define SEGC 17
+#define SEGD 18 
+#define SEGE 19
+#define SEGF 25
+#define SEGG 5
 #define DOT 4
 
 #define IRRead 39
@@ -41,15 +38,13 @@ const char* ntpServer2 = "tempus2.gum.gov.pl";
 const String timezone = 	"CET-1CEST,M3.5.0,M10.5.0/3";
 
 int LED_DISPLAY[4] = {LED1 ,LED2, LED3, LED4};
-// int SEG[7] = {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG};
-// int nums[11][7] = {{SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGF}, {SEGB, SEGC, SEGB, SEGC, SEGB, SEGC, SEGB},
-//                    {SEGA, SEGB, SEGG, SEGE, SEGD, SEGD, SEGD}, {SEGA,SEGB,SEGG,SEGC,SEGD,SEGC,SEGD},
-//                    {SEGF, SEGB, SEGG, SEGC,SEGB, SEGG, SEGC}, {SEGA,SEGF,SEGG,SEGC,SEGD,SEGC,SEGD},
-//                    {SEGA,SEGF,SEGG,SEGC,SEGD,SEGE,SEGE}, {SEGA,SEGB,SEGC,SEGA,SEGB,SEGC,SEGA},
-//                    {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG}, {SEGA,SEGB,SEGG,SEGF,SEGC,SEGD,SEGD},
-//                    {SEGG,SEGG,SEGG,SEGG,SEGG,SEGG,SEGG}};
-int nums[11][3] = {{10,10,10},{BCD0,10,10},{BCD1,10,10},{BCD0,BCD1,10},{BCD2,10,10},{BCD2,BCD0,10}
-                  ,{BCD2,BCD1,10},{BCD2,BCD1,BCD0},{BCD3,10,10},{BCD3,BCD0,10}};
+int SEG[7] = {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG};
+int nums[11][7] = {{SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGF}, {SEGB, SEGC, SEGB, SEGC, SEGB, SEGC, SEGB},
+                   {SEGA, SEGB, SEGG, SEGE, SEGD, SEGD, SEGD}, {SEGA,SEGB,SEGG,SEGC,SEGD,SEGC,SEGD},
+                   {SEGF, SEGB, SEGG, SEGC,SEGB, SEGG, SEGC}, {SEGA,SEGF,SEGG,SEGC,SEGD,SEGC,SEGD},
+                   {SEGA,SEGF,SEGG,SEGC,SEGD,SEGE,SEGE}, {SEGA,SEGB,SEGC,SEGA,SEGB,SEGC,SEGA},
+                   {SEGA, SEGB, SEGC, SEGD, SEGE, SEGF, SEGG}, {SEGA,SEGB,SEGG,SEGF,SEGC,SEGD,SEGD},
+                   {SEGG,SEGG,SEGG,SEGG,SEGG,SEGG,SEGG}};
 int seconds = 0;
 uint8_t history_up = 0;
 uint8_t history_down = 0;
@@ -91,21 +86,12 @@ void setup() {
   pinMode(LED4, OUTPUT);
 
 
-  // for(int seg : SEG){
-  //   pinMode(seg, OUTPUT_OPEN_DRAIN);
-  //   digitalWrite(seg, HIGH);
-  // }
-  pinMode(BCD0,OUTPUT);
-  digitalWrite(BCD0,LOW);
-  pinMode(BCD1,OUTPUT);
-  digitalWrite(BCD1,LOW);
-  pinMode(BCD2,OUTPUT);
-  digitalWrite(BCD2,LOW);
-  pinMode(BCD3,OUTPUT);
-  digitalWrite(BCD3,LOW);
+  for(int seg : SEG){
+    pinMode(seg, OUTPUT_OPEN_DRAIN);
+    digitalWrite(seg, HIGH);
+  }
   
   pinMode(DOT, OUTPUT_OPEN_DRAIN);
-
   digitalWrite(DOT, HIGH);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -158,9 +144,7 @@ void loop() {
     }
     digitalWrite(OUT1, LOW);
     // impulse
-    digitalWrite(OUT2, HIGH);
-    delay(1000);
-    digitalWrite(OUT2,LOW);
+    playMusic();
   }
   start = false;
 }
@@ -246,21 +230,15 @@ void ShowNum(int display_port, int num, bool dot){
     digitalWrite(display_port, HIGH);
       for(int seg : nums[num])
       {
-        digitalWrite(seg, HIGH);
-        // digitalWrite(seg, LOW);
+        digitalWrite(seg, LOW);
       }
       digitalWrite(DOT, dot?LOW:HIGH);
       delay(1);
       digitalWrite(DOT, HIGH);
-      digitalWrite(BCD0,LOW);
-      digitalWrite(BCD1,LOW);
-      digitalWrite(BCD2,LOW);
-      digitalWrite(BCD3,LOW);
-      
-      // for(int seg : SEG)
-      // {
-      //   digitalWrite(seg, HIGH);
-      // }
+      for(int seg : SEG)
+      {
+        digitalWrite(seg, HIGH);
+      }
       digitalWrite(display_port, LOW);
 }
 
