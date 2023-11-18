@@ -52,17 +52,17 @@ bool didBChange = true;
 int previousA;
 int previousB;
 bool start = false;
+volatile bool music = false;
 
 void ShowNums(void * parameter);
 void ShowNum(int,int,bool);
 void ReadingInput(void * parameter);
+void Buzzer(void * parameter);
 void Encoder_Inc();
 void setTimezone(String timezone);
 
 void setup() {
   Serial.begin(115200);  
-  TaskHandle_t Task_Display;
-  TaskHandle_t Task_Input;
   pinMode(INC_DOWN ,INPUT_PULLDOWN);
   pinMode(INC_UP ,INPUT_PULLDOWN);
   pinMode(START_READ ,INPUT_PULLDOWN);
@@ -114,15 +114,25 @@ void setup() {
       10000,  /* Stack size in words */
       NULL,  /* Task input parameter */
       0,  /* Priority of the task */
-      &Task_Display,  /* Task handle. */
+      NULL,  /* Task handle. */
       0); /* Core where the task should run */
+
+      // For some reason if i set priority 0 on 2nd task it screws up the program
   xTaskCreatePinnedToCore(
       ReadingInput, /* Function to implement the task */
       "Task_Input", /* Name of the task */
       10000,  /* Stack size in words */
       NULL,  /* Task input parameter */
       1,  /* Priority of the task */
-      &Task_Input,  /* Task handle. */
+      NULL,  /* Task handle. */
+      1); /* Core where the task should run */  
+  xTaskCreatePinnedToCore(
+      Buzzer, /* Function to implement the task */
+      "Task_Buzzer", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      1,  /* Priority of the task */
+      NULL,  /* Task handle. */
       1); /* Core where the task should run */
 
 
@@ -130,9 +140,13 @@ void setup() {
   
 }
 
+
 void loop() {
   //button start
-  if((digitalRead(START_READ) == HIGH || start) && seconds != 0){
+  if(digitalRead(START_READ) == HIGH || start){
+    start = false;
+    music = false;
+    if(seconds == 0) {seconds = 0; return;}
       //step
     digitalWrite(OUT1, HIGH);
     ulong now = millis();
@@ -144,9 +158,24 @@ void loop() {
     }
     digitalWrite(OUT1, LOW);
     // impulse
-    playMusic();
+    music = true;
   }
-  start = false;
+
+}
+
+void Buzzer(void * parameter){
+  int i = 0;
+  while(true){
+    if(!music) continue;
+    for (i=0;(i<203 && music == true);i++){              //203 is the total number of music notes in the song
+      int wait = duration[i] * songspeed;
+      ulong now = millis();
+      tone(buzzer,notes[i],wait);          //tone(pin,frequency,duration)
+      while(millis() - now < wait){}
+    } 
+    music = false;
+    i = 0;
+  }
 }
 
 void ReadingInput(void * parameter){ //task
